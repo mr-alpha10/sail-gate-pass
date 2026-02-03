@@ -1,0 +1,125 @@
+// Prisma Schema for SAIL Gate Pass System
+// Using SQLite for local development (easy setup, no external database needed)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// User model - stores all registered users
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  name              String
+  phone             String
+  password          String        // Hashed password
+  role              String        @default("user") // user, security, department_admin
+  department        String?       // Only for department_admin role
+  
+  // Email Verification
+  emailVerified     Boolean       @default(false)
+  otp               String?       // OTP for email verification
+  otpExpiry         DateTime?     // OTP expiration time
+  
+  // Profile Details (collected after OTP verification)
+  profileCompleted  Boolean       @default(false)
+  dateOfBirth       String?
+  gender            String?
+  
+  // Government ID
+  governmentIdType  String?       // Aadhaar, PAN, Voter ID, Driving License, Passport
+  governmentIdNumber String?
+  
+  // Address
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  
+  // Profile Picture
+  profilePicture    String?       // Base64 or file path
+  
+  // Emergency Contact
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactRelation String?
+  
+  // Employment Details (for employees)
+  employeeId        String?
+  designation       String?
+  companyName       String?
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  applications      Application[] @relation("UserApplications")
+  
+  @@map("users")
+}
+
+// Application model - stores gate pass applications
+model Application {
+  id                 String   @id @default(cuid())
+  
+  // Applicant info (stored separately for record keeping)
+  userId             String
+  userName           String
+  userEmail          String
+  userPhone          String
+  
+  // Application details
+  purpose            String
+  department         String
+  visitDate          String
+  visitTime          String
+  duration           String
+  vehicleNumber      String?
+  
+  // Status tracking
+  status             String   @default("pending") // pending, forwarded, approved, rejected
+  
+  // Comments and approvals
+  securityComments   String?
+  departmentComments String?
+  approvedBy         String?
+  
+  // QR Code data (JSON string)
+  qrCode             String?
+  
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  // Relations
+  user               User     @relation("UserApplications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("applications")
+}
+
+// Department model - stores department information
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  adminId   String?
+  createdAt DateTime @default(now())
+  
+  @@map("departments")
+}
+
+// OTP Log model - for tracking OTP attempts
+model OtpLog {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  type      String   // registration, password_reset
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  
+  @@map("otp_logs")
+}
