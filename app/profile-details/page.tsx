@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import ProfileDetailsClient from "./profile-details-client"
+export const dynamic = 'force-dynamic'
 
 export default async function ProfileDetailsPage() {
   const user = await getCurrentUser()
